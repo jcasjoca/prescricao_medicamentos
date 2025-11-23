@@ -4,12 +4,13 @@ Sistema de gerenciamento de prescrições médicas desenvolvido com **Spring Boo
 
 ## 🚀 Tecnologias
 
-- **Java 17**
+- **Java 24**
 - **Spring Boot 3.4.0**
 - **Spring Data JPA**
+- **HikariCP** (connection pooling)
 - **MySQL 8.0** (Banco Legado)
-- **Lombok**
 - **Bootstrap 5.3**
+- **Font Awesome 6.4**
 
 ## ⚙️ Configuração
 
@@ -29,19 +30,13 @@ spring.datasource.password=SUA_SENHA
 
 O sistema espera as seguintes tabelas:
 
-#### Tabelas de Leitura
-- `DOCUMENTO`
-- `PESSOA` (contém NOMEPESSOA)
-- `PESSOAFIS`
-- `PESSOAJUR` (contém NOMEFAN - Nome do Profissional)
+#### Tabelas Utilizadas
+- `PESSOA` (IDPESSOA como PK, ID_DOCUMENTO separado)
 - `PACIENTE`
 - `PROFISSIONAL`
-- `USUARIO`
 - `ESPECIALIDADE`
 - `PROCEDIMENTO`
-
-#### Tabela de Escrita
-- `PRONTUARIO_TEMPORARIO` (com campos de controle de aprovação)
+- `PRONTUARIO_TEMPORARIO` (tabela principal)
 
 ### 3. Executar o Projeto
 
@@ -59,44 +54,49 @@ O servidor estará disponível em: `http://localhost:8080`
 
 ### Backend (REST API)
 
-- `GET /api/prescricoes` - Lista prescrições do profissional logado
-- `POST /api/prescricoes` - Salva nova prescrição
-- `PUT /api/prescricoes/corrigir` - Corrige prescrição reprovada
+- `GET /api/prescricoes` - Lista prescrições do profissional (filtra PENDENTE e REPROVADO)
+- `GET /api/prescricoes/{id}` - Detalhes de uma prescrição
+- `PUT /api/prescricoes/editar` - Edita prescrição PENDENTE
+- `PUT /api/prescricoes/corrigir` - Corrige prescrição REPROVADA
+- `DELETE /api/prescricoes/cancelar/{id}` - Cancela prescrição
 
 ### Frontend
 
 Acesse: `http://localhost:8080/index.html`
 
 **Features:**
-- ✅ Listagem de prescrições
-- ✅ Linhas vermelhas para prescrições reprovadas
-- ✅ Modal para criar nova prescrição
-- ✅ Modal para corrigir prescrições com alerta do motivo
-- ✅ Design com cores suaves (branco + azul claro)
-- ✅ Botão "Corrigir" laranja (psicologia das cores)
+- ✅ Listagem de prontuários em cards
+- ✅ Cards vermelhos para prontuários reprovados
+- ✅ Modal para visualizar detalhes completos
+- ✅ Modal para editar prontuários PENDENTES
+- ✅ Modal para corrigir prontuários REPROVADOS com motivo da reprovação
+- ✅ Modal para cancelar/excluir prontuários
+- ✅ Design limpo (azul #4A90E2 + branco)
+- ✅ Interface totalmente estática (sem hover effects)
+- ✅ Botão "Enviar Correção" verde
 
-## 🔐 Usuário Mock
+## 🔐 Contexto de Usuário
 
-O sistema simula um usuário logado:
+O sistema identifica o profissional logado:
 
-- **Usuário ID**: 60
-- **Profissional ID**: 99
-- **Especialidade ID**: 11
-- **Tipo**: Técnico Básico (2)
+- **Profissional ID**: 99 (hardcoded no UserContextService)
 
 ## 📊 Fluxo de Aprovação
 
-1. **PENDENTE** → Prescrição criada, aguardando aprovação
-2. **APROVADO** → Prescrição aprovada pelo supervisor
-3. **REPROVADO** → Prescrição reprovada, pode ser corrigida
+1. **PENDENTE** → Prontuário criado, aguardando aprovação do supervisor
+2. **REPROVADO** → Prontuário reprovado, pode ser corrigido pelo profissional
+3. **APROVADO** → Prontuário aprovado, **não aparece mais** (foi movido para PRONTUARIO definitivo)
 
-Ao corrigir, o status volta para **PENDENTE**.
+⚠️ **Importante**: Prontuários APROVADOS são automaticamente movidos da tabela temporária para a definitiva.
 
 ## 🎨 Design
 
-- Cores suaves: branco + azul claro (#E8F4F8)
-- Linhas vermelhas para reprovações
-- Botão "Corrigir" laranja (#FF9800) - ação corretiva
+- Header azul gradiente (#4A90E2)
+- Cards brancos com sombra suave
+- Cards vermelhos (#ffebee) para reprovações
+- Interface estática (sem animações hover)
+- Layout responsivo com Bootstrap 5.3
+- Ícones Font Awesome 6.4
 
 ## 📁 Estrutura do Projeto
 
@@ -112,11 +112,8 @@ src/main/java/com/prescricao/medicamentos/
 ├── model/
 │   ├── Documento.java
 │   ├── Pessoa.java
-│   ├── PessoaFisica.java
-│   ├── PessoaJuridica.java
 │   ├── Paciente.java
 │   ├── Profissional.java
-│   ├── Usuario.java
 │   ├── Especialidade.java
 │   ├── Procedimento.java
 │   └── ProntuarioTemporario.java
@@ -125,7 +122,6 @@ src/main/java/com/prescricao/medicamentos/
 │   ├── PacienteRepository.java
 │   ├── ProfissionalRepository.java
 │   ├── PessoaRepository.java
-│   ├── PessoaJuridicaRepository.java
 │   ├── EspecialidadeRepository.java
 │   └── ProcedimentoRepository.java
 └── service/
@@ -135,18 +131,26 @@ src/main/java/com/prescricao/medicamentos/
 src/main/resources/
 ├── application.properties
 └── static/
-    └── index.html
+    ├── index.html
+    ├── css/
+    │   └── styles.css
+    └── js/
+        └── app.js
 ```
 
 ## 📝 Notas Importantes
 
-1. O nome do **Paciente** vem de: `PRONTUARIO_TEMPORARIO → PACIENTE → IDDOCUMENTO → PESSOA.NOMEPESSOA`
+1. O nome do **Paciente** vem de: `PRONTUARIO_TEMPORARIO → PACIENTE → ID_DOCUMENTO → PESSOA.NOMEPESSOA`
 
-2. O nome do **Profissional** vem de: `PRONTUARIO_TEMPORARIO → PROFISSIONAL → IDDOCUMENTO → PESSOAJUR.NOMEFAN`
+2. O nome do **Profissional** vem de: `PRONTUARIO_TEMPORARIO → PROFISSIONAL → ID_DOCUMENTO → PESSOA.NOMEPESSOA`
 
 3. O sistema **NÃO modifica** a estrutura do banco (`ddl-auto=none`)
 
-4. A estratégia de nomenclatura é: `PhysicalNamingStrategyStandardImpl` (mantém nomes originais)
+4. **Sem Lombok**: Todos os getters/setters são manuais (Java 24 incompatível)
+
+5. **Pacientes são sempre Pessoas Físicas** (contexto médico/odontológico)
+
+6. **HikariCP configurado** com pool mínimo para banco compartilhado
 
 ## 🐛 Troubleshooting
 
