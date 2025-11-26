@@ -111,14 +111,14 @@ function criarCardPrescricao(p, duplicados) {
             ` : ''}
             
             <div class="prescricao-actions">
-                <button class="btn btn-info btn-sm" onclick="abrirModalVisualizar(${p.id})">
-                    <i class="fas fa-eye"></i> Visualizar
-                </button>
                 ${p.statusAprovacao === 'PENDENTE' ? `
                 <button class="btn btn-success btn-sm" onclick="abrirModalPrescrever(${p.id})">
                     <i class="fas fa-prescription"></i> Prescrever
                 </button>
                 ` : ''}
+                <button class="btn btn-info btn-sm" onclick="abrirModalVisualizar(${p.id})">
+                    <i class="fas fa-eye"></i> Visualizar
+                </button>
                 ${p.statusAprovacao === 'REPROVADO' ? `
                 <button class="btn btn-warning btn-sm" onclick="abrirModalCorrigir(${p.id})">
                     <i class="fas fa-sync-alt"></i> Corrigir
@@ -214,19 +214,26 @@ function abrirModalPrescrever(id) {
         document.getElementById('editId').value = p.id;
         document.getElementById('editDescricao').value = p.textoPrescricao || '';
         
-        // Atualizar título do modal
-        document.querySelector('#modalEditar .modal-title').innerHTML = '<i class="fas fa-prescription"></i> Prescrever';
-        document.querySelector('#modalEditar .btn-primary').innerHTML = '<i class="fas fa-save"></i> Salvar Prescrição';
-        
         new bootstrap.Modal(document.getElementById('modalEditar')).show();
     })
-    .catch(error => console.error('Erro:', error));
+    .catch(error => {
+        console.error('Erro ao abrir modal prescrever:', error);
+        alert('Erro ao abrir modal de prescrição');
+    });
 }
 
 function enviarEdicao() {
+    const id = parseInt(document.getElementById('editId').value);
+    const textoPrescricao = document.getElementById('editDescricao').value;
+    
+    if (!textoPrescricao || textoPrescricao.trim() === '') {
+        alert('Por favor, preencha a prescrição!');
+        return;
+    }
+    
     const dados = {
-        id: parseInt(document.getElementById('editId').value),
-        textoPrescricao: document.getElementById('editDescricao').value
+        id: id,
+        textoPrescricao: textoPrescricao
     };
     
     fetch('/api/prescricoes/editar', {
@@ -243,10 +250,15 @@ function enviarEdicao() {
             carregarPrescricoes();
             alert('Prescrição salva com sucesso!');
         } else {
-            alert('Erro ao salvar prescrição');
+            return response.text().then(text => {
+                alert('Erro ao salvar prescrição: ' + text);
+            });
         }
     })
-    .catch(error => console.error('Erro:', error));
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao salvar prescrição');
+    });
 }
 
 // Modal Corrigir

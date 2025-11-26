@@ -157,9 +157,10 @@ public class PrescricaoService {
     }
 
     /**
-     * FUNCIONALIDADE 3: Editar Prescrição Pendente
+     * FUNCIONALIDADE 3: Editar/Prescrever Prontuário Pendente
      * - Permite edição ANTES do supervisor analisar
      * - Apenas para prescrições com STATUS_APROVACAO = PENDENTE
+     * - Sobrescreve o campo DESCPRONTU (textoPrescricao)
      */
     @Transactional
     public ProntuarioTemporario editarPrescricao(CorrigirPrescricaoRequest request) {
@@ -167,6 +168,7 @@ public class PrescricaoService {
         if (prescricaoId == null) {
             throw new RuntimeException("ID da prescrição não pode ser nulo");
         }
+        
         ProntuarioTemporario prontuario = prontuarioRepository.findById(prescricaoId)
                 .orElseThrow(() -> new RuntimeException("Prescrição não encontrada"));
 
@@ -175,7 +177,9 @@ public class PrescricaoService {
             throw new RuntimeException("Apenas prescrições PENDENTES podem ser editadas. Use corrigir para prescrições reprovadas.");
         }
 
+        // Sobrescrever o campo DESCPRONTU com a nova prescrição
         prontuario.setTextoPrescricao(request.getTextoPrescricao());
+        
         return prontuarioRepository.save(prontuario);
     }
 
