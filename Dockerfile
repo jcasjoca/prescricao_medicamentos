@@ -1,17 +1,35 @@
-# Build stage
-FROM eclipse-temurin:21-jdk AS build
+# ETAPA 1: Build com Maven
+FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
+
+# Copiar arquivos do projeto
 COPY pom.xml .
 COPY src ./src
-COPY .mvn ./.mvn
 COPY mvnw .
-RUN chmod +x mvnw
-RUN ./mvnw clean package -DskipTests
+COPY mvnw.cmd .
+COPY .mvn ./.mvn
 
-# Runtime stage
-FROM eclipse-temurin:21-jre
+# Dar permissão de execução ao wrapper
+RUN chmod +x ./mvnw
+
+# Compilar o projeto
+RUN ./mvnw clean package -DskipTests -Dmaven.test.skip=true
+
+# Verificar se o JAR foi criado (debug)
+RUN ls -la /app/target/
+
+# ETAPA 2: Runtime
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/target/prescricao_medicamentos-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8080
+
+# Copiar o JAR compilado
+COPY --from=builder /app/target/prescricao_medicamentos-0.0.1-SNAPSHOT.jar app.jar
+
+# Configurar JVM
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=$PORT -jar app.jar"]
+
+# Expor porta
+EXPOSE 8080
+
+# Comando de inicialização
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=$PORT -jar /app/app.jar"]
