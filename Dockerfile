@@ -22,8 +22,8 @@ RUN ls -la /app/target/
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Copiar o JAR compilado
-COPY --from=builder /app/target/prescricao_medicamentos-0.0.1-SNAPSHOT.jar app.jar
+# Copiar o JAR compilado (usa wildcard para pegar qualquer .jar)
+COPY --from=builder /app/target/*.jar app.jar
 
 # Configurar JVM
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
