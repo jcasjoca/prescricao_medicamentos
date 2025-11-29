@@ -177,9 +177,9 @@ function abrirModalVisualizar(id) {
     .then(response => response.json())
     .then(p => {
         document.getElementById('viewId').textContent = p.id;
-        document.getElementById('viewIdPaciente').textContent = p.idPaciente || 'N/A';
         document.getElementById('viewStatus').innerHTML = getBadgeStatus(p.statusAprovacao);
-        document.getElementById('viewDataProced').textContent = formatarData(p.dataProced);
+        document.getElementById('viewDataProced').textContent = formatarData(p.dataProcedimento);
+        document.getElementById('viewIdPaciente').textContent = p.idPaciente || 'N/A';
         document.getElementById('viewPaciente').textContent = p.nomePaciente || 'N/A';
         document.getElementById('viewProfissional').textContent = p.nomeProfissional || 'N/A';
         document.getElementById('viewEspecialidade').textContent = p.especialidade || 'N/A';
